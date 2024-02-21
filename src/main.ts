@@ -6,6 +6,7 @@ import { getNibblerTool } from './nibbler';
   try {
     const nibbler = await getNibblerTool();
     await exec.exec(nibbler, ['--version']);
+    core.setOutput('image-digest', 'sha256:123456789abcdef')
   } catch (error) {
     core.setFailed((error as Error).message);
   }
