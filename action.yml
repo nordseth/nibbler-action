@@ -12,12 +12,10 @@ inputs:
     required: false
   artifacts:
     description: 'path to artifacts to add to image'
-    default: 'artifacts'
-    required: true
+    required: false
   app-path:
     description: 'app path in image. Add artifacts to this path and set as working directory.'
-    default: '/home/app'
-    required: true
+    required: false
   entrypoint:
     description: 'entrypoint for image'
     required: false
@@ -26,7 +24,6 @@ inputs:
     required: false
   user:
     description: 'user inside image'
-    default: 'app'
     required: false
   nibbler-version:
     description: 'version of nibbler to use'

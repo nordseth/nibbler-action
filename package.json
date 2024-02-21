@@ -17,7 +17,9 @@
     "@actions/tool-cache": "^2.0.1"
   },
   "devDependencies": {
-    "typescript": "^5.3.3",
-    "concurrently": "^4.1.0"
+    "@types/node": "^20.11.19",
+    "@vercel/ncc": "^0.38.1",
+    "concurrently": "^8.2.2",
+    "typescript": "^5.3.3"
   }
 }

@@ -5,17 +5,17 @@ jobs:
     runs-on: ubuntu-latest
     name: test action
     steps:
-      - name: Test nibbler action
+      - name: login to ghcr.io
+        uses: nordseth/nibbler-action/login@main
+        with:
+          registry: "ghcr.io"
+          username: "USERNAME"
+          password: "{{ secrets.GITHUB_TOKEN }}"
+      - name: build and push
         id: nibbler
         uses: nordseth/nibbler-action@main
         with:
-          from-image: ""
-          to-images: ""
+          from-image: "alpine:latest"
+          to-images: "ghcr.io/nordseth/apline:latest"
       - name: Get output 
         run: echo "${{ steps.nibbler.outputs.image-digest }}"
-      - name: Test nibbler action
-        uses: nordseth/nibbler-action/login@main
-        with:
-          username: ""
-          password: ""
-          registry: ""
