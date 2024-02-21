@@ -1,5 +1,9 @@
 on: [push]
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   nibbler-test:
     runs-on: ubuntu-latest
