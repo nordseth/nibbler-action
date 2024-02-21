@@ -28,7 +28,7 @@ inputs:
     description: 'user inside image'
     default: 'app'
     required: false
-  nibber-version:
+  nibbler-version:
     description: 'version of nibbler to use'
     default: '1.11.0-beta.3'
     required: true

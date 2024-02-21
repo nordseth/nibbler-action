@@ -28647,7 +28647,7 @@ const core = __importStar(__nccwpck_require__(6905));
 const tc = __importStar(__nccwpck_require__(4000));
 const getNibblerTool = async () => {
     const version = core.getInput('nibbler-version');
-    core.info(`nibbler-version: ${version}`);
+    core.debug(`nibbler-version: ${version}`);
     let nibblerPath = tc.find('nibbler', version);
     if (!nibblerPath) {
         const downloadUrl = `https://github.com/nordseth/Nibbler/releases/download/v${version}/Nibbler.${version}_linux-x64.tar.gz`;
@@ -28656,6 +28656,7 @@ const getNibblerTool = async () => {
         const nibblerExtracted = await tc.extractTar(nibblerTar);
         nibblerPath = await tc.cacheFile(`${nibblerExtracted}/nibbler`, 'nibbler', 'nibbler', version);
     }
+    core.debug(`nibbler-path: ${nibblerPath}`);
     return `${nibblerPath}/nibbler`;
 };
 exports.getNibblerTool = getNibblerTool;
