@@ -7,7 +7,7 @@ jobs:
     steps:
       - name: Hello world action step
         id: nibbler
-        uses: nordseth/nibbler-action@main
+        uses: nordseth/nibbler-action@v1
         with:
           from-image: ""
           to-images: ""
