@@ -1,0 +1,40 @@
+name: 'Nibbler'
+description: 'Build and push image with Nibbler'
+inputs:
+  from-image: 
+    description: 'base image to build from'
+    required: true
+  to-images:
+    description: 'push image to these registries'
+    required: true
+  labels:
+    description: 'comma seperated list of labels to add to image'
+    required: false
+  artifacts:
+    description: 'path to artifacts to add to image'
+    default: 'artifacts'
+    required: true
+  app-path:
+    description: 'app path in image. Add artifacts to this path and set as working directory.'
+    default: '/home/app'
+    required: true
+  entrypoint:
+    description: 'entrypoint for image'
+    required: false
+  cmd:
+    description: 'cmd for image'
+    required: false
+  user:
+    description: 'user inside image'
+    default: 'app'
+    required: false
+  nibber-version:
+    description: 'version of nibbler to use'
+    default: '1.11.0-beta.3'
+    required: true
+outputs:
+  image-digest: 
+    description: 'digest of image built'
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
