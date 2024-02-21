@@ -1,15 +1,15 @@
 on: [push]
 
 jobs:
-  hello_world_job:
+  nibbler-test:
     runs-on: ubuntu-latest
     name: test action
     steps:
-      - name: Hello world action step
+      - name: Test nibbler action
         id: nibbler
         uses: nordseth/nibbler-action@main
         with:
           from-image: ""
           to-images: ""
-      - name: Get the output time
+      - name: Get output 
         run: echo "${{ steps.nibbler.outputs.image-digest }}"

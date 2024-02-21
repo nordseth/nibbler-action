@@ -28603,6 +28603,7 @@ const nibbler_1 = __nccwpck_require__(4269);
     try {
         const nibbler = await (0, nibbler_1.getNibblerTool)();
         await exec.exec(nibbler, ['--version']);
+        core.setOutput('image-digest', 'sha256:123456789abcdef');
     }
     catch (error) {
         core.setFailed(error.message);
@@ -28645,10 +28646,12 @@ exports.getNibblerTool = void 0;
 const core = __importStar(__nccwpck_require__(6905));
 const tc = __importStar(__nccwpck_require__(4000));
 const getNibblerTool = async () => {
-    const version = core.getInput('version');
+    const version = core.getInput('nibbler-version');
     let nibblerPath = tc.find('nibbler', version);
     if (!nibblerPath) {
-        const nibblerTar = await tc.downloadTool(`https://github.com/nordseth/Nibbler/releases/download/v${version}/Nibbler.${version}_linux-x64.tar.gz`);
+        const downloadUrl = `https://github.com/nordseth/Nibbler/releases/download/v${version}/Nibbler.${version}_linux-x64.tar.gz`;
+        core.info(`downloading from ${downloadUrl}`);
+        const nibblerTar = await tc.downloadTool(downloadUrl);
         const nibblerTmp = await tc.extractTar(nibblerTar);
         nibblerPath = await tc.cacheFile(`${nibblerTmp}/nibbler`, 'nibbler', 'nibbler', version);
     }
