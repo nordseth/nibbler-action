@@ -4,22 +4,34 @@ permissions:
   contents: read
   packages: write
 
+env:
+  dest-image: "ghcr.io/nordseth/nibbler-action"
+
 jobs:
   nibbler-test:
     runs-on: ubuntu-latest
     name: test action
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: login to ghcr.io
         uses: nordseth/nibbler-action/login@main
         with:
           registry: "ghcr.io"
           username: "USERNAME"
           password: "${{ secrets.GITHUB_TOKEN }}"
+      - name: metadata
+        id: metadata
+        uses: nordseth/nibbler-action/metadata@main
+        with:
+          image: ${{ env.dest-image }}
       - name: build and push
         id: nibbler
         uses: nordseth/nibbler-action@main
         with:
           from-image: "registry.hub.docker.com/library/alpine:latest"
-          to-images: "ghcr.io/nordseth/nibbler-action:alpine-latest"
+          to-images: ${{ steps.metadata.outputs.images }}
+          labels: ${{ steps.metadata.outputs.labels }}
       - name: Get output 
         run: echo "${{ steps.nibbler.outputs.image-digest }}"

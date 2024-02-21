@@ -1,0 +1,40 @@
+name: 'Nibber Metadata'
+description: 'Metadata generator for Nibbler'
+inputs:
+  release-branch:
+    description: 'branch to release from'
+    default: 'main'
+    required: false
+  image:
+    description: 'image to generate metadata for'
+    required: true
+  tag-prefix:
+    description: 'prefix for release tag'
+    default: 'v'
+    required: true
+  # git-tag:
+  #   description: 'add release tag to git when created?'
+  #   default: 'false'
+  #   required: true
+  # git-push-tag:
+  #   description: 'push release tag to git when created?'
+  #   default: 'false'
+  #   required: true
+  # add-latest:
+  #   description: 'add latest tag on release'
+  #   default: 'true'
+  #   required: true
+outputs:
+  is-release-tag:
+    description: 'true when release'
+  tag:
+    description: 'tag to use for image'
+  tag-created:
+    description: 'true if a new release tag was created. Should be set in git and pushed.'
+  images:
+    description: 'list og images with tags. Used as input to Nibbler'
+  labels:
+    description: 'list of labels. Used as input to Nibbler'
+runs:
+  using: 'node20'
+  main: '../dist/metadata/index.js'
