@@ -28981,7 +28981,7 @@ try {
             //    tag = newTag
             //    tagCreated = true
             // dummy
-            tag = 'v1.0.0';
+            tag = `${tagPrefix}1.0.0`;
             tagCreated = true;
             images.push(`${image}:latest`);
         }
@@ -28997,17 +28997,29 @@ try {
         tag = `pr-${pr.number}`;
         images.push(`${image}:${tag}`);
     }
-    core.setOutput('is-release-tag', isRelease);
-    core.setOutput('tag', tag);
-    core.setOutput('tag-created', tagCreated);
-    core.setOutput('images', images.join(','));
-    const labels = [
-        `org.opencontainers.image.source=${github.context.payload.repository?.html_url}`,
-        `org.opencontainers.image.revision=${github.context.sha}`,
-        `org.opencontainers.image.version=${tag}`,
-        `org.opencontainers.image.description=`
-    ];
-    core.setOutput('labels', labels.join(','));
+    if (tag) {
+        core.info(`tag: ${tag}`);
+        if (tagCreated) {
+            core.info(`(tag created)`);
+        }
+        if (isRelease) {
+            core.info(`+tag: latest`);
+        }
+        core.setOutput('tag', tag);
+        core.setOutput('is-release-tag', isRelease ? 'true' : 'false');
+        core.setOutput('tag-created', tagCreated ? 'true' : 'false');
+        core.setOutput('images', images.join(','));
+        const labels = [
+            `org.opencontainers.image.source=${github.context.payload.repository?.html_url}`,
+            `org.opencontainers.image.revision=${github.context.sha}`,
+            `org.opencontainers.image.version=${tag}`,
+            `org.opencontainers.image.description=`
+        ];
+        core.setOutput('labels', labels.join(','));
+    }
+    else {
+        core.warning('No tag created.');
+    }
 }
 catch (error) {
     core.setFailed(error.message);

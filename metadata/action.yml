@@ -25,16 +25,16 @@ inputs:
   #   default: 'true'
   #   required: true
 outputs:
+  tag:
+    description: 'resolved tag'
   is-release-tag:
     description: 'true when release'
-  tag:
-    description: 'tag to use for image'
   tag-created:
     description: 'true if a new release tag was created. Should be set in git and pushed.'
   images:
-    description: 'list og images with tags. Used as input to Nibbler'
+    description: 'List og images with tags. Used as input to Nibbler'
   labels:
-    description: 'list of labels. Used as input to Nibbler'
+    description: 'List of labels. Used as input to Nibbler'
 runs:
   using: 'node20'
   main: '../dist/metadata/index.js'
