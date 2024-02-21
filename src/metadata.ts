@@ -52,9 +52,10 @@ try {
     core.setOutput('images', images.join(','))
 
     const labels = [
-        `org.opencontainers.image.source=${github.context.repo.repo}`,
+        `org.opencontainers.image.source=${github.context.payload.repository?.html_url}`,
         `org.opencontainers.image.revision=${github.context.sha}`,
-        `org.opencontainers.image.version=${tag}`
+        `org.opencontainers.image.version=${tag}`,
+        `org.opencontainers.image.description=`
     ]
 
     core.setOutput('labels', labels.join(','))
