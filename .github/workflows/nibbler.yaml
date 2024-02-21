@@ -15,7 +15,7 @@ jobs:
         id: nibbler
         uses: nordseth/nibbler-action@main
         with:
-          from-image: "alpine:latest"
+          from-image: "registry.hub.docker.com/library/alpine:latest"
           to-images: "ghcr.io/nordseth/apline:latest"
       - name: Get output 
         run: echo "${{ steps.nibbler.outputs.image-digest }}"
