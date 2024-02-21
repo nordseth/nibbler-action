@@ -4,7 +4,9 @@
   "description": "Github action for [Nibbler](https://github.com/nordseth/Nibbler)",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "package": "ncc build src/main.ts"
+    "build:main": "ncc build src/main.ts -o dist",
+    "build:login": "ncc build src/login.ts -o dist/login",
+    "build": "concurrently 'npm:build:main' 'npm:build:login'"
   },
   "keywords": [],
   "author": "",
@@ -15,6 +17,7 @@
     "@actions/tool-cache": "^2.0.1"
   },
   "devDependencies": {
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "concurrently": "^4.1.0"
   }
 }

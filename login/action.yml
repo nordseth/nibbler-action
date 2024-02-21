@@ -1,0 +1,19 @@
+name: 'Nibbler Login'
+description: 'Login to repository with Nibbler'
+inputs:
+  registry:
+    description: 'repository to login to'
+    required: true 
+  username:
+    description: 'username for registry'
+    required: true
+  password:
+    description: 'password for registry'
+    required: true
+  nibbler-version:
+    description: 'version of nibbler to use'
+    default: '1.11.0-beta.3'
+    required: true
+runs:
+  using: 'node20'
+  main: '../dist/login/index.js'

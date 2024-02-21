@@ -28567,7 +28567,7 @@ exports["default"] = _default;
 
 /***/ }),
 
-/***/ 7509:
+/***/ 2340:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -28602,8 +28602,12 @@ const nibbler_1 = __nccwpck_require__(4269);
 (async () => {
     try {
         const nibbler = await (0, nibbler_1.getNibblerTool)();
-        await exec.exec(nibbler, ['--help']);
-        core.setOutput('image-digest', 'sha256:123456789abcdef');
+        await exec.exec(nibbler, [
+            'login',
+            core.getInput('registry'),
+            '--username', core.getInput('username'),
+            '--password', core.getInput('password')
+        ]);
     }
     catch (error) {
         core.setFailed(error.message);
@@ -30565,7 +30569,7 @@ module.exports = parseParams
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module is referenced by other modules so it can't be inlined
-/******/ 	var __webpack_exports__ = __nccwpck_require__(7509);
+/******/ 	var __webpack_exports__ = __nccwpck_require__(2340);
 /******/ 	module.exports = __webpack_exports__;
 /******/ 	
 /******/ })()

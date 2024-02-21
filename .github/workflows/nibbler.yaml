@@ -13,3 +13,9 @@ jobs:
           to-images: ""
       - name: Get output 
         run: echo "${{ steps.nibbler.outputs.image-digest }}"
+      - name: Test nibbler action
+        uses: nordseth/nibbler-action/login@main
+        with:
+          username: ""
+          password: ""
+          registry: ""
