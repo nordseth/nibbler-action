@@ -26,6 +26,7 @@ jobs:
         uses: nordseth/nibbler-action/metadata@main
         with:
           image: ${{ env.dest-image }}
+          image-description: "This is a test image"
       - name: build and push
         id: nibbler
         uses: nordseth/nibbler-action@main

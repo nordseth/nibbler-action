@@ -2,77 +2,53 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import { PullRequest, PushEvent } from '@octokit/webhooks-definitions/schema'
 
+function GetTag(version: string, addLatestTag: boolean): string[] {
+    if (version) {
+        return [version, 'latest']
+    }
+    else if (github.context.eventName === 'push') {
+        const branchName = github.context.ref.replace('refs/heads/', '').replace('refs/tags/', '')
+        const sanitizedBranchName = branchName.replace(/[^a-zA-Z0-9._-]+/g, '-').toLowerCase()
+
+        return [`latest_${sanitizedBranchName}`]
+    }
+    else if (github.context.eventName === 'pull_request') {
+        const pr = github.context.payload as PullRequest
+        return [`pr-${pr.number}`]
+    }
+
+    return []
+}
+
+
 try {
 
-    const releaseBranch = core.getInput('release-branch')
-    const image = core.getInput('image')
-    const tagPrefix = core.getInput('tag-prefix')
+    const addLatestTag = core.getBooleanInput('latest')
+    const version = core.getInput('version')
 
-    let isRelease: boolean = false
-    let tagCreated: boolean = false
-    let tag: string = ''
-    let images: string[] = []
+    const tags = GetTag(version, addLatestTag)
 
-    if (github.context.eventName === 'push') {
-        if (github.context.ref === `refs/heads/${releaseBranch}`) {
-            isRelease = true
-            // todo:
-            // check for release tag on current commit.
-            // if found 
-            //    tag = foundTag
-            //    tagCreated = false
-            // else
-            //    create a new release tag by incrementing the last release tag
-            //    tag = newTag
-            //    tagCreated = true
-
-            // dummy
-            tag = `${tagPrefix}1.0.0`
-            tagCreated = true
-
-            images.push(`${image}:latest`)
-        } else {
-            const branchName = github.context.ref.replace('refs/heads/', '')
-            const sanitizedBranchName = branchName.replace(/[^a-zA-Z0-9._-]+/g, '-').toLowerCase()
-            tag = `latest_${sanitizedBranchName}`
-        }
-
-        images.push(`${image}:${tag}`)
+    if (tags.length == 0) {
+        core.warning('No tag created.')
     }
-
-    if (github.context.eventName === 'pull_request') {
-        const pr = github.context.payload as PullRequest
-        tag = `pr-${pr.number}`
-        images.push(`${image}:${tag}`)
-    }
-
-    if (tag) {
-        core.info(`tag: ${tag}`)
-        if (tagCreated) {
-            core.info(`(tag created)`)
-        }
-        if (isRelease) {
-            core.info(`+tag: latest`)
-        }
-
-        core.setOutput('tag', tag)
-        core.setOutput('is-release-tag', isRelease ? 'true' : 'false')
-        core.setOutput('tag-created', tagCreated ? 'true' : 'false')
-        core.setOutput('images', images.join(','))
+    else {
+        core.setOutput('image-tag', tags[0])
+        const image = core.getInput('image')
+        core.setOutput('images', tags.map(tag => `${image}:${tag}`).join(','))
 
         const labels = [
             `org.opencontainers.image.source=${github.context.payload.repository?.html_url}`,
             `org.opencontainers.image.revision=${github.context.sha}`,
-            `org.opencontainers.image.version=${tag}`,
-            `org.opencontainers.image.description=`
+            `org.opencontainers.image.version=${tags[0]}`,
+            `org.opencontainers.image.description=${core.getInput('image-description')}`
         ]
 
         core.setOutput('labels', labels.join(','))
 
-    } else {
-        core.warning('No tag created.')
+        tags.forEach(tag => core.info(`tag: ${tag}`))
     }
 
 } catch (error) {
     core.setFailed((error as Error).message);
 }
+
