@@ -27,7 +27,7 @@ inputs:
     required: false
   nibbler-version:
     description: 'version of nibbler to use'
-    default: '1.11.0'
+    default: '1.12.0'
     required: true
 outputs:
   image-digest: 
