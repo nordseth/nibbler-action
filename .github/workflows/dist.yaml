@@ -1,0 +1,35 @@
+on:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: './package-lock.json'
+
+      - name: Install dependencies
+        run: npm install
+      - name: Build
+        run: npm run build
+      - name: GIT commit and push all changed files
+        env: 
+          CI_COMMIT_MESSAGE: Continuous Integration Build Artifacts
+          CI_COMMIT_AUTHOR: github-actions[bot]
+          CI_COMMIT_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+        run: |
+          git add dist
+
+          if [ -n "$(git diff --staged)" ]; then
+            git config --global user.name "${{ env.CI_COMMIT_AUTHOR }}"
+            git config --global user.email "${{ env.CI_COMMIT_EMAIL }}"
+            git commit -m "build ${{ env.CI_COMMIT_MESSAGE }}"
+            git push
+          else
+            echo "Working tree clean. Nothing to commit.";
+          fi
+    
