@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import { PullRequest, PushEvent } from '@octokit/webhooks-definitions/schema'
+import { PullRequest, PushEvent } from '@octokit/webhooks-types'
 
 function GetTag(version: string, addLatestTag: boolean): string[] {
     if (version) {
