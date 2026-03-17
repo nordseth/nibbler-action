@@ -33,5 +33,5 @@ outputs:
   image-digest: 
     description: 'digest of image built'
 runs:
-  using: 'node20'
+  using: 'node22'
   main: 'dist/index.js'
