@@ -18,16 +18,16 @@
     "@actions/github": "^6.0.0",
     "@actions/tool-cache": "^2.0.2",
     "@octokit/webhooks-types": "^7.6.1",
-    "detect-libc": "^2.0.3",
-    "undici": "^6.23.0"
+    "detect-libc": "^2.1.2",
+    "undici": "^6.24.1"
   },
   "devDependencies": {
-    "@types/node": "^22.13.4",
-    "@vercel/ncc": "^0.38.3",
-    "concurrently": "^9.1.2",
-    "typescript": "^5.7.3"
+    "@types/node": "^22.19.15",
+    "@vercel/ncc": "^0.38.4",
+    "concurrently": "^9.2.1",
+    "typescript": "^5.9.3"
   },
   "overrides": {
-    "undici": "^6.23.0"
+    "undici": "^6.24.1"
   }
 }

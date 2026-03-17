@@ -4109,8 +4109,10 @@ function _unique(values) {
 
 const childProcess = __nccwpck_require__(5317);
 const { isLinux, getReport } = __nccwpck_require__(3235);
-const { LDD_PATH, readFile, readFileSync } = __nccwpck_require__(3991);
+const { LDD_PATH, SELF_PATH, readFile, readFileSync } = __nccwpck_require__(3991);
+const { interpreterPath } = __nccwpck_require__(167);
 
+let cachedFamilyInterpreter;
 let cachedFamilyFilesystem;
 let cachedVersionFilesystem;
 
@@ -4186,7 +4188,19 @@ const familyFromCommand = (out) => {
   return null;
 };
 
+const familyFromInterpreterPath = (path) => {
+  if (path) {
+    if (path.includes('/ld-musl-')) {
+      return MUSL;
+    } else if (path.includes('/ld-linux-')) {
+      return GLIBC;
+    }
+  }
+  return null;
+};
+
 const getFamilyFromLddContent = (content) => {
+  content = content.toString();
   if (content.includes('musl')) {
     return MUSL;
   }
@@ -4220,6 +4234,32 @@ const familyFromFilesystemSync = () => {
   return cachedFamilyFilesystem;
 };
 
+const familyFromInterpreter = async () => {
+  if (cachedFamilyInterpreter !== undefined) {
+    return cachedFamilyInterpreter;
+  }
+  cachedFamilyInterpreter = null;
+  try {
+    const selfContent = await readFile(SELF_PATH);
+    const path = interpreterPath(selfContent);
+    cachedFamilyInterpreter = familyFromInterpreterPath(path);
+  } catch (e) {}
+  return cachedFamilyInterpreter;
+};
+
+const familyFromInterpreterSync = () => {
+  if (cachedFamilyInterpreter !== undefined) {
+    return cachedFamilyInterpreter;
+  }
+  cachedFamilyInterpreter = null;
+  try {
+    const selfContent = readFileSync(SELF_PATH);
+    const path = interpreterPath(selfContent);
+    cachedFamilyInterpreter = familyFromInterpreterPath(path);
+  } catch (e) {}
+  return cachedFamilyInterpreter;
+};
+
 /**
  * Resolves with the libc family when it can be determined, `null` otherwise.
  * @returns {Promise<?string>}
@@ -4227,13 +4267,16 @@ const familyFromFilesystemSync = () => {
 const family = async () => {
   let family = null;
   if (isLinux()) {
-    family = await familyFromFilesystem();
+    family = await familyFromInterpreter();
     if (!family) {
-      family = familyFromReport();
-    }
-    if (!family) {
-      const out = await safeCommand();
-      family = familyFromCommand(out);
+      family = await familyFromFilesystem();
+      if (!family) {
+        family = familyFromReport();
+      }
+      if (!family) {
+        const out = await safeCommand();
+        family = familyFromCommand(out);
+      }
     }
   }
   return family;
@@ -4246,13 +4289,16 @@ const family = async () => {
 const familySync = () => {
   let family = null;
   if (isLinux()) {
-    family = familyFromFilesystemSync();
+    family = familyFromInterpreterSync();
     if (!family) {
-      family = familyFromReport();
-    }
-    if (!family) {
-      const out = safeCommandSync();
-      family = familyFromCommand(out);
+      family = familyFromFilesystemSync();
+      if (!family) {
+        family = familyFromReport();
+      }
+      if (!family) {
+        const out = safeCommandSync();
+        family = familyFromCommand(out);
+      }
     }
   }
   return family;
@@ -4373,6 +4419,53 @@ module.exports = {
 
 /***/ }),
 
+/***/ 167:
+/***/ ((module) => {
+
+"use strict";
+// Copyright 2017 Lovell Fuller and others.
+// SPDX-License-Identifier: Apache-2.0
+
+
+
+const interpreterPath = (elf) => {
+  if (elf.length < 64) {
+    return null;
+  }
+  if (elf.readUInt32BE(0) !== 0x7F454C46) {
+    // Unexpected magic bytes
+    return null;
+  }
+  if (elf.readUInt8(4) !== 2) {
+    // Not a 64-bit ELF
+    return null;
+  }
+  if (elf.readUInt8(5) !== 1) {
+    // Not little-endian
+    return null;
+  }
+  const offset = elf.readUInt32LE(32);
+  const size = elf.readUInt16LE(54);
+  const count = elf.readUInt16LE(56);
+  for (let i = 0; i < count; i++) {
+    const headerOffset = offset + (i * size);
+    const type = elf.readUInt32LE(headerOffset);
+    if (type === 3) {
+      const fileOffset = elf.readUInt32LE(headerOffset + 8);
+      const fileSize = elf.readUInt32LE(headerOffset + 32);
+      return elf.subarray(fileOffset, fileOffset + fileSize).toString().replace(/\0.*$/g, '');
+    }
+  }
+  return null;
+};
+
+module.exports = {
+  interpreterPath
+};
+
+
+/***/ }),
+
 /***/ 3991:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -4384,37 +4477,47 @@ module.exports = {
 
 const fs = __nccwpck_require__(9896);
 
-/**
- * The path where we can find the ldd
- */
 const LDD_PATH = '/usr/bin/ldd';
+const SELF_PATH = '/proc/self/exe';
+const MAX_LENGTH = 2048;
 
 /**
  * Read the content of a file synchronous
  *
  * @param {string} path
- * @returns {string}
+ * @returns {Buffer}
  */
-const readFileSync = (path) => fs.readFileSync(path, 'utf-8');
+const readFileSync = (path) => {
+  const fd = fs.openSync(path, 'r');
+  const buffer = Buffer.alloc(MAX_LENGTH);
+  const bytesRead = fs.readSync(fd, buffer, 0, MAX_LENGTH, 0);
+  fs.close(fd, () => {});
+  return buffer.subarray(0, bytesRead);
+};
 
 /**
  * Read the content of a file
  *
  * @param {string} path
- * @returns {Promise<string>}
+ * @returns {Promise<Buffer>}
  */
 const readFile = (path) => new Promise((resolve, reject) => {
-  fs.readFile(path, 'utf-8', (err, data) => {
+  fs.open(path, 'r', (err, fd) => {
     if (err) {
       reject(err);
     } else {
-      resolve(data);
+      const buffer = Buffer.alloc(MAX_LENGTH);
+      fs.read(fd, buffer, 0, MAX_LENGTH, 0, (_, bytesRead) => {
+        resolve(buffer.subarray(0, bytesRead));
+        fs.close(fd, () => {});
+      });
     }
   });
 });
 
 module.exports = {
   LDD_PATH,
+  SELF_PATH,
   readFileSync,
   readFile
 };
@@ -9043,6 +9146,24 @@ class SecureProxyConnectionError extends UndiciError {
   [kSecureProxyConnectionError] = true
 }
 
+const kMessageSizeExceededError = Symbol.for('undici.error.UND_ERR_WS_MESSAGE_SIZE_EXCEEDED')
+class MessageSizeExceededError extends UndiciError {
+  constructor (message) {
+    super(message)
+    this.name = 'MessageSizeExceededError'
+    this.message = message || 'Max decompressed message size exceeded'
+    this.code = 'UND_ERR_WS_MESSAGE_SIZE_EXCEEDED'
+  }
+
+  static [Symbol.hasInstance] (instance) {
+    return instance && instance[kMessageSizeExceededError] === true
+  }
+
+  get [kMessageSizeExceededError] () {
+    return true
+  }
+}
+
 module.exports = {
   AbortError,
   HTTPParserError,
@@ -9066,7 +9187,8 @@ module.exports = {
   ResponseExceededMaxSizeError,
   RequestRetryError,
   ResponseError,
-  SecureProxyConnectionError
+  SecureProxyConnectionError,
+  MessageSizeExceededError
 }
 
 
@@ -9142,6 +9264,10 @@ class Request {
 
     if (upgrade && typeof upgrade !== 'string') {
       throw new InvalidArgumentError('upgrade must be a string')
+    }
+
+    if (upgrade && !isValidHeaderValue(upgrade)) {
+      throw new InvalidArgumentError('invalid upgrade header')
     }
 
     if (headersTimeout != null && (!Number.isFinite(headersTimeout) || headersTimeout < 0)) {
@@ -9438,13 +9564,19 @@ function processHeader (request, key, val) {
     val = `${val}`
   }
 
-  if (request.host === null && headerName === 'host') {
+  if (headerName === 'host') {
+    if (request.host !== null) {
+      throw new InvalidArgumentError('duplicate host header')
+    }
     if (typeof val !== 'string') {
       throw new InvalidArgumentError('invalid host header')
     }
     // Consumed by Client
     request.host = val
-  } else if (request.contentLength === null && headerName === 'content-length') {
+  } else if (headerName === 'content-length') {
+    if (request.contentLength !== null) {
+      throw new InvalidArgumentError('duplicate content-length header')
+    }
     request.contentLength = parseInt(val, 10)
     if (!Number.isFinite(request.contentLength)) {
       throw new InvalidArgumentError('invalid content-length header')
@@ -32235,10 +32367,14 @@ module.exports = {
 
 const { createInflateRaw, Z_DEFAULT_WINDOWBITS } = __nccwpck_require__(8522)
 const { isValidClientWindowBits } = __nccwpck_require__(8625)
+const { MessageSizeExceededError } = __nccwpck_require__(8707)
 
 const tail = Buffer.from([0x00, 0x00, 0xff, 0xff])
 const kBuffer = Symbol('kBuffer')
 const kLength = Symbol('kLength')
+
+// Default maximum decompressed message size: 4 MB
+const kDefaultMaxDecompressedSize = 4 * 1024 * 1024
 
 class PerMessageDeflate {
   /** @type {import('node:zlib').InflateRaw} */
@@ -32246,6 +32382,15 @@ class PerMessageDeflate {
 
   #options = {}
 
+  /** @type {boolean} */
+  #aborted = false
+
+  /** @type {Function|null} */
+  #currentCallback = null
+
+  /**
+   * @param {Map<string, string>} extensions
+   */
   constructor (extensions) {
     this.#options.serverNoContextTakeover = extensions.has('server_no_context_takeover')
     this.#options.serverMaxWindowBits = extensions.get('server_max_window_bits')
@@ -32256,6 +32401,11 @@ class PerMessageDeflate {
     // 1.  Append 4 octets of 0x00 0x00 0xff 0xff to the tail end of the
     //     payload of the message.
     // 2.  Decompress the resulting data using DEFLATE.
+
+    if (this.#aborted) {
+      callback(new MessageSizeExceededError())
+      return
+    }
 
     if (!this.#inflate) {
       let windowBits = Z_DEFAULT_WINDOWBITS
@@ -32269,13 +32419,37 @@ class PerMessageDeflate {
         windowBits = Number.parseInt(this.#options.serverMaxWindowBits)
       }
 
-      this.#inflate = createInflateRaw({ windowBits })
+      try {
+        this.#inflate = createInflateRaw({ windowBits })
+      } catch (err) {
+        callback(err)
+        return
+      }
       this.#inflate[kBuffer] = []
       this.#inflate[kLength] = 0
 
       this.#inflate.on('data', (data) => {
-        this.#inflate[kBuffer].push(data)
+        if (this.#aborted) {
+          return
+        }
+
         this.#inflate[kLength] += data.length
+
+        if (this.#inflate[kLength] > kDefaultMaxDecompressedSize) {
+          this.#aborted = true
+          this.#inflate.removeAllListeners()
+          this.#inflate.destroy()
+          this.#inflate = null
+
+          if (this.#currentCallback) {
+            const cb = this.#currentCallback
+            this.#currentCallback = null
+            cb(new MessageSizeExceededError())
+          }
+          return
+        }
+
+        this.#inflate[kBuffer].push(data)
       })
 
       this.#inflate.on('error', (err) => {
@@ -32284,16 +32458,22 @@ class PerMessageDeflate {
       })
     }
 
+    this.#currentCallback = callback
     this.#inflate.write(chunk)
     if (fin) {
       this.#inflate.write(tail)
     }
 
     this.#inflate.flush(() => {
+      if (this.#aborted || !this.#inflate) {
+        return
+      }
+
       const full = Buffer.concat(this.#inflate[kBuffer], this.#inflate[kLength])
 
       this.#inflate[kBuffer].length = 0
       this.#inflate[kLength] = 0
+      this.#currentCallback = null
 
       callback(null, full)
     })
@@ -32348,6 +32528,10 @@ class ByteParser extends Writable {
   /** @type {Map<string, PerMessageDeflate>} */
   #extensions
 
+  /**
+   * @param {import('./websocket').WebSocket} ws
+   * @param {Map<string, string>|null} extensions
+   */
   constructor (ws, extensions) {
     super()
 
@@ -32490,6 +32674,7 @@ class ByteParser extends Writable {
 
         const buffer = this.consume(8)
         const upper = buffer.readUInt32BE(0)
+        const lower = buffer.readUInt32BE(4)
 
         // 2^31 is the maximum bytes an arraybuffer can contain
         // on 32-bit systems. Although, on 64-bit systems, this is
@@ -32497,14 +32682,12 @@ class ByteParser extends Writable {
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/Invalid_array_length
         // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/common/globals.h;drc=1946212ac0100668f14eb9e2843bdd846e510a1e;bpv=1;bpt=1;l=1275
         // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.h;l=34;drc=1946212ac0100668f14eb9e2843bdd846e510a1e
-        if (upper > 2 ** 31 - 1) {
+        if (upper !== 0 || lower > 2 ** 31 - 1) {
           failWebsocketConnection(this.ws, 'Received payload length > 2^31 bytes.')
           return
         }
 
-        const lower = buffer.readUInt32BE(4)
-
-        this.#info.payloadLength = (upper << 8) + lower
+        this.#info.payloadLength = lower
         this.#state = parserStates.READ_DATA
       } else if (this.#state === parserStates.READ_DATA) {
         if (this.#byteOffset < this.#info.payloadLength) {
@@ -32534,7 +32717,7 @@ class ByteParser extends Writable {
           } else {
             this.#extensions.get('permessage-deflate').decompress(body, this.#info.fin, (error, data) => {
               if (error) {
-                closeWebSocketConnection(this.ws, 1007, error.message, error.message.length)
+                failWebsocketConnection(this.ws, error.message)
                 return
               }
 
@@ -33141,6 +33324,12 @@ function parseExtensions (extensions) {
  * @param {string} value
  */
 function isValidClientWindowBits (value) {
+  // Must have at least one character
+  if (value.length === 0) {
+    return false
+  }
+
+  // Check all characters are ASCII digits
   for (let i = 0; i < value.length; i++) {
     const byte = value.charCodeAt(i)
 
@@ -33149,7 +33338,9 @@ function isValidClientWindowBits (value) {
     }
   }
 
-  return true
+  // Check numeric range: zlib requires windowBits in range 8-15
+  const num = Number.parseInt(value, 10)
+  return num >= 8 && num <= 15
 }
 
 // https://nodejs.org/api/intl.html#detecting-internationalization-support
@@ -33628,7 +33819,7 @@ class WebSocket extends EventTarget {
    * @see https://websockets.spec.whatwg.org/#feedback-from-the-protocol
    */
   #onConnectionEstablished (response, parsedExtensions) {
-    // processResponse is called when the "response’s header list has been received and initialized."
+    // processResponse is called when the "response's header list has been received and initialized."
     // once this happens, the connection is open
     this[kResponse] = response
 
