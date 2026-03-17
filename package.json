@@ -18,8 +18,7 @@
     "@actions/github": "^6.0.0",
     "@actions/tool-cache": "^2.0.2",
     "@octokit/webhooks-types": "^7.6.1",
-    "detect-libc": "^2.1.2",
-    "undici": "^6.24.1"
+    "detect-libc": "^2.1.2"
   },
   "devDependencies": {
     "@types/node": "^22.19.15",
