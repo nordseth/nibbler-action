@@ -22,5 +22,5 @@ outputs:
   labels:
     description: 'List of labels. Used as input to Nibbler'
 runs:
-  using: 'node20'
+  using: 'node22'
   main: '../dist/metadata/index.js'
