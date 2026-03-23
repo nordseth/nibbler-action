@@ -15,5 +15,5 @@ inputs:
     default: '1.15.1'
     required: true
 runs:
-  using: 'node22'
+  using: 'node24'
   main: '../dist/login/index.js'
