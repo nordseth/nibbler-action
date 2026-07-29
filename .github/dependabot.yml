@@ -8,19 +8,6 @@ updates:
       weekly-batch:
         patterns:
           - "*"
-    # The @actions/* v2/v3/v4/v9 majors are ESM-only. This action is bundled
-    # as CommonJS via ncc, so those majors produce a broken build (ncc emits
-    # "Cannot find module" stubs). Stay on the last CommonJS majors until the
-    # action is migrated to ESM.
-    ignore:
-      - dependency-name: "@actions/core"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "@actions/exec"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "@actions/github"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "@actions/tool-cache"
-        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     directory: "/"

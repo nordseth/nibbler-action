@@ -20,6 +20,22 @@ jobs:
         run: npm install
       - name: Build
         run: npm run build
+      - name: Guard against broken bundle
+        run: |
+          for f in dist/index.js dist/login/index.js dist/metadata/index.js; do
+            if [ ! -s "$f" ]; then
+              echo "::error::expected bundle missing or empty: $f"; exit 1
+            fi
+          done
+          set +e
+          matches=$(grep -rEl "webpackMissingModule|Cannot find module '@actions" dist)
+          rc=$?
+          set -e
+          if [ "$rc" -eq 0 ]; then
+            echo "::error::dist bundle contains unresolved-module markers:"; echo "$matches"; exit 1
+          elif [ "$rc" -ge 2 ]; then
+            echo "::error::guard grep failed with exit status $rc"; exit 1
+          fi
       - name: GIT commit and push all changed files
         env: 
           CI_COMMIT_MESSAGE: Continuous Integration Build Artifacts
