@@ -13,16 +13,16 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@actions/core": "^1.11.1",
-    "@actions/exec": "^1.1.1",
-    "@actions/github": "^6.0.0",
-    "@actions/tool-cache": "^2.0.2",
+    "@actions/core": "^3.0.1",
+    "@actions/exec": "^3.0.0",
+    "@actions/github": "^9.1.1",
+    "@actions/tool-cache": "^4.0.0",
     "@octokit/webhooks-types": "^7.6.1",
     "detect-libc": "^2.1.2"
   },
   "devDependencies": {
-    "@types/node": "^24.0.0",
-    "@vercel/ncc": "^0.38.4",
+    "@types/node": "^26.1.2",
+    "@vercel/ncc": "^0.44.1",
     "concurrently": "^10.0.4",
     "typescript": "^5.9.3"
   },
