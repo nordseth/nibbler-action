@@ -105,14 +105,8 @@ Outputs: `image-tag` (the first tag), `images` (`image:tag` list for `to-images`
 
 ## Runners
 
-The action downloads the Nibbler release binary that matches the runner:
-
-| Runner | Binary |
-| --- | --- |
-| Linux x64 | `linux-x64` |
-| Linux arm64 | `linux-arm64` |
-| Alpine / musl x64 or arm64 | `linux-musl-x64`, `linux-musl-arm64` (Nibbler 1.16.2 or later) |
-| Windows | Not supported: the action downloads a `.tar.gz`, but the Windows release is a `.zip` |
+The action runs on Linux x64 and arm64, with glibc or musl (Alpine). It downloads the matching
+Nibbler release binary. musl needs Nibbler 1.16.2 or later.
 
 ## Development
 
