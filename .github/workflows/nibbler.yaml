@@ -1,4 +1,7 @@
-on: [push]
+on:
+  push:
+    branches: [main]
+  pull_request:
 
 permissions:
   contents: read
@@ -9,30 +12,69 @@ env:
 
 jobs:
   nibbler-test:
-    runs-on: ubuntu-latest
-    name: test action
+    name: test action (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # the action downloads a different Nibbler binary for each of these
+          - target: linux-x64
+            os: ubuntu-latest
+          - target: linux-arm64
+            os: ubuntu-24.04-arm
+          - target: linux-musl-x64
+            os: ubuntu-latest
+            container: node:24-alpine
     steps:
+      - name: install git (alpine)
+        if: matrix.container != ''
+        run: apk add --no-cache git
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+      # test the action from this checkout, not @main, so a pull request tests its own code.
+      # Build dist/ here too: dist.yaml commits the rebuilt bundle with GITHUB_TOKEN, and that
+      # push doesn't trigger workflows, so the committed dist/ can lag behind src/.
+      - uses: actions/setup-node@v7
+        if: matrix.container == ''
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: './package-lock.json'
+      - name: build action
+        run: |
+          npm ci
+          npm run build
       - name: login to ghcr.io
-        uses: nordseth/nibbler-action/login@main
+        uses: ./login
         with:
           registry: "ghcr.io"
           username: "USERNAME"
           password: "${{ secrets.GITHUB_TOKEN }}"
       - name: metadata
         id: metadata
-        uses: nordseth/nibbler-action/metadata@main
+        uses: ./metadata
         with:
           image: ${{ env.dest-image }}
           image-description: "This is a test image"
       - name: build and push
         id: nibbler
-        uses: nordseth/nibbler-action@main
+        uses: ./
         with:
           from-image: "registry.hub.docker.com/library/alpine:latest"
-          to-images: ${{ steps.metadata.outputs.images }}
+          # one tag per target, so the matrix jobs don't overwrite each other
+          to-images: ${{ env.dest-image }}:ci-${{ matrix.target }}
           labels: ${{ steps.metadata.outputs.labels }}
-      - name: Get output 
-        run: echo "${{ steps.nibbler.outputs.image-digest }}"
+      - name: check output
+        env:
+          DIGEST: ${{ steps.nibbler.outputs.image-digest }}
+          IMAGES: ${{ steps.metadata.outputs.images }}
+        run: |
+          echo "metadata images: $IMAGES"
+          echo "image digest: $DIGEST"
+          case "$DIGEST" in
+            sha256:*) ;;
+            *) echo "::error::no image digest from the action"; exit 1 ;;
+          esac
