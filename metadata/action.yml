@@ -1,4 +1,4 @@
-name: 'Nibber Metadata'
+name: 'Nibbler Metadata'
 description: 'Metadata generator for Nibbler'
 inputs:
   version:
