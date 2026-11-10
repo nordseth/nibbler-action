@@ -56,9 +56,6 @@ steps:
   - run: echo "pushed ${{ steps.metadata.outputs.image-tag }} as ${{ steps.nibbler.outputs.image-digest }}"
 ```
 
-[reusable-workflows](https://github.com/nordseth/reusable-workflows) has a complete .NET build,
-image and Helm deploy workflow built on these actions.
-
 ## Inputs
 
 ### nibbler-action
